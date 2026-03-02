@@ -1,0 +1,587 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>2026 网络可视化深度洞察报告</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    
+    <!-- Chosen Palette: "Professional Insight" 
+         - Background: #F8FAFC (Slate 50) - Neutral and clean
+         - Primary: #0F172A (Slate 900) - Authoritative
+         - Accent: #0284C7 (Sky 600) - Modern tech feel
+         - Success: #059669 (Emerald 600) - Growth and clarity
+    -->
+
+    <!-- Application Structure Plan:
+         1. [Header]: Global branding and primary navigation tabs.
+         2. [Executive Summary]: Quick-view cards with core KPIs and the "Why Now" narrative.
+         3. [Interactive Matrix]:
+            - Pain Points (Left) vs. Objectives (Right) grid.
+            - Capability Radar: Interactive radar chart to explore functional dimensions.
+         4. [Technical Architecture & Indicators]:
+            - Technology Timeline/Evolution.
+            - Metrics Dashboard (Visualizing accuracy, latency, and scale).
+         5. [Strategic Landscape]: 
+            - Application Scenarios explorer (Interactive tiles).
+            - Vendor Landscape comparison (Grouped by specialization).
+         6. [Future Vision]: Thematic roadmap for the next 3-5 years.
+         
+         User Flow: User enters -> Sees immediate industry pressure (Pain Points) -> Explores needed capabilities (Radar) -> Drills into technical metrics -> Validates via use cases -> Evaluates vendors.
+    -->
+
+    <!-- Visualization & Content Choices:
+         - Pain Points -> Goal: Inform -> Method: Semantic Grid with Icons -> Interaction: Hover to see impact.
+         - Capability Map -> Goal: Organize -> Method: Radar Chart (Chart.js) -> Interaction: Segment breakdown.
+         - Indicator System -> Goal: Compare -> Method: Multi-axis Bar Chart -> Interaction: Toggle metric views.
+         - Vendors -> Goal: Compare -> Method: Category Matrices -> Interaction: Click for profile.
+         - NO SVG used for custom graphics; leveraging Chart.js Canvas and FontAwesome Unicode/Icons.
+    -->
+
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+
+    <style>
+        @import url('https://gs.jurieo.com/gemini/fonts-googleapis/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: #f8fafc;
+            color: #1e293b;
+        }
+
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 650px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 350px;
+            max-height: 400px;
+        }
+
+        @media (max-width: 768px) {
+            .chart-container {
+                height: 300px;
+            }
+        }
+
+        .nav-active {
+            border-bottom: 3px solid #0284c7;
+            color: #0284c7;
+            font-weight: 600;
+        }
+
+        .glass-card {
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(226, 232, 240, 0.8);
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+            animation: fadeIn 0.4s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .scenario-card:hover .icon-box {
+            transform: scale(1.1) rotate(5deg);
+        }
+    </style>
+</head>
+<body class="antialiased">
+
+    <!-- Navigation -->
+    <header class="bg-white border-b border-slate-200 sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-20">
+                <div class="flex items-center space-x-3">
+                    <div class="w-10 h-10 bg-sky-600 rounded-lg flex items-center justify-center text-white text-xl">
+                        <i class="fas fa-microscope"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-xl font-bold text-slate-900 leading-tight">NetVis <span class="text-sky-600">Insight</span></h1>
+                        <p class="text-xs text-slate-500 font-medium tracking-widest uppercase">2026 Industry Report</p>
+                    </div>
+                </div>
+                <nav class="hidden lg:flex space-x-8 h-full items-center">
+                    <button onclick="switchTab('overview')" id="nav-overview" class="nav-active px-1 pt-1 text-sm transition-all duration-200">市场与痛点</button>
+                    <button onclick="switchTab('capability')" id="nav-capability" class="px-1 pt-1 text-sm text-slate-500 hover:text-sky-600 transition-all">能力拆解</button>
+                    <button onclick="switchTab('tech')" id="nav-tech" class="px-1 pt-1 text-sm text-slate-500 hover:text-sky-600 transition-all">技术指标</button>
+                    <button onclick="switchTab('scenario')" id="nav-scenario" class="px-1 pt-1 text-sm text-slate-500 hover:text-sky-600 transition-all">应用厂商</button>
+                    <button onclick="switchTab('future')" id="nav-future" class="px-1 pt-1 text-sm text-slate-500 hover:text-sky-600 transition-all">未来演进</button>
+                </nav>
+                <div class="lg:hidden">
+                    <button id="mobile-menu-btn" class="p-2 text-slate-600">
+                        <i class="fas fa-bars text-xl"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+
+        <!-- TAB: OVERVIEW (Pain Points & Goals) -->
+        <section id="tab-overview" class="tab-content active">
+            <div class="mb-12">
+                <h2 class="text-3xl font-extrabold text-slate-900 tracking-tight mb-4">市场现状：从“盲目”走向“全维”</h2>
+                <p class="text-lg text-slate-600 max-w-3xl">
+                    随着数字化基础设施向混合云、算网融合及微服务架构演进，传统基于“边界”的监控手段已彻底失效。网络可视化已从单一的“分流工具”升级为企业数字主权的“观测中心”。
+                </p>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-12">
+                <!-- Pain Points -->
+                <div class="glass-card rounded-2xl p-8">
+                    <div class="flex items-center space-x-3 mb-6">
+                        <span class="text-rose-500 bg-rose-50 p-2 rounded-lg"><i class="fas fa-exclamation-triangle"></i></span>
+                        <h3 class="text-xl font-bold">行业核心痛点</h3>
+                    </div>
+                    <div class="space-y-6">
+                        <div class="flex items-start space-x-4">
+                            <div class="mt-1 text-slate-400 font-mono text-sm">01</div>
+                            <div>
+                                <h4 class="font-semibold text-slate-800">加密流量黑盒</h4>
+                                <p class="text-sm text-slate-500">TLS 1.3 普及导致被动审计失效，攻击者利用加密隧道隐藏侧向移动。</p>
+                            </div>
+                        </div>
+                        <div class="flex items-start space-x-4">
+                            <div class="mt-1 text-slate-400 font-mono text-sm">02</div>
+                            <div>
+                                <h4 class="font-semibold text-slate-800">多云“可见性孤岛”</h4>
+                                <p class="text-sm text-slate-500">跨公有云、私有云流量难以统一调取，微服务内部（East-West）流量不可见。</p>
+                            </div>
+                        </div>
+                        <div class="flex items-start space-x-4">
+                            <div class="mt-1 text-slate-400 font-mono text-sm">03</div>
+                            <div>
+                                <h4 class="font-semibold text-slate-800">超大规模性能瓶颈</h4>
+                                <p class="text-sm text-slate-500">400G/800G网络环境下，传统探针丢包严重，无法支持全量数据实时分析。</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Strategic Goals -->
+                <div class="bg-slate-900 text-white rounded-2xl p-8">
+                    <div class="flex items-center space-x-3 mb-6">
+                        <span class="text-sky-400 bg-white/10 p-2 rounded-lg"><i class="fas fa-bullseye"></i></span>
+                        <h3 class="text-xl font-bold">战略目标</h3>
+                    </div>
+                    <div class="grid grid-cols-1 gap-4">
+                        <div class="p-4 bg-white/5 border border-white/10 rounded-xl hover:bg-white/10 transition-colors">
+                            <h4 class="font-bold text-sky-400 mb-1">全维观测</h4>
+                            <p class="text-sm text-slate-400">实现物理、虚拟、云原生、容器环境流量的100%覆盖。</p>
+                        </div>
+                        <div class="p-4 bg-white/5 border border-white/10 rounded-xl hover:bg-white/10 transition-colors">
+                            <h4 class="font-bold text-sky-400 mb-1">智能分析</h4>
+                            <p class="text-sm text-slate-400">从“看包”到“看业务”，通过AI自动识别异常行为与性能瓶颈。</p>
+                        </div>
+                        <div class="p-4 bg-white/5 border border-white/10 rounded-xl hover:bg-white/10 transition-colors">
+                            <h4 class="font-bold text-sky-400 mb-1">敏捷响应</h4>
+                            <p class="text-sm text-slate-400">将可见性数据与安全网关联动，实现秒级威胁隔离。</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB: CAPABILITY -->
+        <section id="tab-capability" class="tab-content">
+            <div class="mb-12">
+                <h2 class="text-3xl font-extrabold text-slate-900 tracking-tight mb-4">能力拆解：构建五维可视模型</h2>
+                <p class="text-lg text-slate-600 max-w-3xl">
+                    现代网络可视化方案不再是简单的硬件堆砌，而是一个涵盖从硬件采集到上层业务逻辑分析的端到端能力集。
+                </p>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+                <div class="chart-container">
+                    <canvas id="capabilityRadar"></canvas>
+                </div>
+                <div class="space-y-6">
+                    <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+                        <div class="flex items-center space-x-3 mb-2">
+                            <div class="w-8 h-8 bg-sky-100 text-sky-600 rounded-full flex items-center justify-center font-bold">1</div>
+                            <h4 class="font-bold">智能采集与汇聚 (Intelligent Capture)</h4>
+                        </div>
+                        <p class="text-sm text-slate-500 pl-11">支持400G+流量全线速采集、去重、切片及流量特征标记，确保源头数据“真、全、快”。</p>
+                    </div>
+                    <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+                        <div class="flex items-center space-x-3 mb-2">
+                            <div class="w-8 h-8 bg-sky-100 text-sky-600 rounded-full flex items-center justify-center font-bold">2</div>
+                            <h4 class="font-bold">深度协议分析 (DPI/DFI)</h4>
+                        </div>
+                        <p class="text-sm text-slate-500 pl-11">超越传统五元组，识别5000+种应用层协议，支持对加密流量的启发式指纹识别。</p>
+                    </div>
+                    <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+                        <div class="flex items-center space-x-3 mb-2">
+                            <div class="w-8 h-8 bg-sky-100 text-sky-600 rounded-full flex items-center justify-center font-bold">3</div>
+                            <h4 class="font-bold">云原生观测 (Cloud-Native Vis)</h4>
+                        </div>
+                        <p class="text-sm text-slate-500 pl-11">集成 eBPF 技术，无侵入式获取 K8s 内部 Pod 间通信及系统调用链信息。</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB: TECH & INDICATORS -->
+        <section id="tab-tech" class="tab-content">
+            <div class="mb-12">
+                <h2 class="text-3xl font-extrabold text-slate-900 tracking-tight mb-4">技术底座与指标体系</h2>
+                <p class="text-lg text-slate-600 max-w-3xl">
+                    为了量化可视化平台的实效性，我们需要建立一套从底层硬件效率到上层决策辅助的科学评价指标。
+                </p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
+                <div class="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm text-center">
+                    <div class="text-slate-400 text-xs font-bold uppercase tracking-widest mb-2">协议识别率</div>
+                    <div class="text-4xl font-extrabold text-sky-600 mb-1">>98.5%</div>
+                    <p class="text-xs text-slate-500">基于AI模型的未知协议自动识别</p>
+                </div>
+                <div class="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm text-center">
+                    <div class="text-slate-400 text-xs font-bold uppercase tracking-widest mb-2">平均延迟</div>
+                    <div class="text-4xl font-extrabold text-emerald-600 mb-1"><5μs</div>
+                    <p class="text-xs text-slate-500">FPGA硬件级数据流转发延迟</p>
+                </div>
+                <div class="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm text-center">
+                    <div class="text-slate-400 text-xs font-bold uppercase tracking-widest mb-2">分析性能</div>
+                    <div class="text-4xl font-extrabold text-indigo-600 mb-1">1.2 Tbps</div>
+                    <p class="text-xs text-slate-500">集群化分布式流处理能力</p>
+                </div>
+            </div>
+
+            <div class="glass-card rounded-2xl p-8 mb-12">
+                <h3 class="text-xl font-bold mb-6 text-center">核心性能指标对比：传统 vs 现代</h3>
+                <div class="chart-container">
+                    <canvas id="indicatorBar"></canvas>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <div class="p-6 bg-slate-50 rounded-2xl border border-slate-200">
+                    <h4 class="font-bold text-slate-800 mb-4 flex items-center">
+                        <i class="fas fa-layer-group text-sky-600 mr-2"></i> 关键底层技术
+                    </h4>
+                    <ul class="space-y-3">
+                        <li class="flex justify-between items-center text-sm">
+                            <span class="text-slate-600">eBPF 内核探测</span>
+                            <span class="px-2 py-1 bg-sky-100 text-sky-700 rounded text-xs">云原生首选</span>
+                        </li>
+                        <li class="flex justify-between items-center text-sm">
+                            <span class="text-slate-600">P4 可编程交换技术</span>
+                            <span class="px-2 py-1 bg-emerald-100 text-emerald-700 rounded text-xs">协议敏捷性</span>
+                        </li>
+                        <li class="flex justify-between items-center text-sm">
+                            <span class="text-slate-600">FPGA 硬件加速</span>
+                            <span class="px-2 py-1 bg-indigo-100 text-indigo-700 rounded text-xs">零丢包保证</span>
+                        </li>
+                    </ul>
+                </div>
+                <div class="p-6 bg-slate-50 rounded-2xl border border-slate-200">
+                    <h4 class="font-bold text-slate-800 mb-4 flex items-center">
+                        <i class="fas fa-microchip text-sky-600 mr-2"></i> 指标体系构成
+                    </h4>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="p-3 bg-white rounded-lg border border-slate-100">
+                            <div class="text-[10px] text-slate-400 font-bold">基础层</div>
+                            <div class="text-sm font-semibold">吞吐量、丢包率</div>
+                        </div>
+                        <div class="p-3 bg-white rounded-lg border border-slate-100">
+                            <div class="text-[10px] text-slate-400 font-bold">协议层</div>
+                            <div class="text-sm font-semibold">识别精度、解析深度</div>
+                        </div>
+                        <div class="p-3 bg-white rounded-lg border border-slate-100">
+                            <div class="text-[10px] text-slate-400 font-bold">业务层</div>
+                            <div class="text-sm font-semibold">交易成功率、响应延时</div>
+                        </div>
+                        <div class="p-3 bg-white rounded-lg border border-slate-100">
+                            <div class="text-[10px] text-slate-400 font-bold">价值层</div>
+                            <div class="text-sm font-semibold">MTTR缩短率、ROI</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB: SCENARIO & VENDOR -->
+        <section id="tab-scenario" class="tab-content">
+            <div class="mb-12">
+                <h2 class="text-3xl font-extrabold text-slate-900 tracking-tight mb-4">应用场景与厂商地图</h2>
+                <p class="text-lg text-slate-600 max-w-3xl">
+                    网络可视化已不再是孤立的工具，而是作为一种“能力底座”嵌入到安全、运维与业务经营中。
+                </p>
+            </div>
+
+            <!-- Application Scenarios -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-16">
+                <div class="scenario-card bg-white p-6 rounded-2xl border border-slate-200 hover:shadow-xl transition-all duration-300">
+                    <div class="icon-box w-12 h-12 bg-sky-50 text-sky-600 rounded-xl flex items-center justify-center text-xl mb-4 transition-transform">
+                        <i class="fas fa-shield-alt"></i>
+                    </div>
+                    <h4 class="font-bold text-lg mb-2">安全检测 (SecOps)</h4>
+                    <p class="text-sm text-slate-500 leading-relaxed mb-4">通过向NDR、入侵检测系统实时提供预过滤的高质量流量，提升安全检测的精准度。</p>
+                    <div class="text-[10px] font-bold text-sky-600 uppercase">关键技术：TLS解密、指纹提取</div>
+                </div>
+                <div class="scenario-card bg-white p-6 rounded-2xl border border-slate-200 hover:shadow-xl transition-all duration-300">
+                    <div class="icon-box w-12 h-12 bg-emerald-50 text-emerald-600 rounded-xl flex items-center justify-center text-xl mb-4 transition-transform">
+                        <i class="fas fa-network-wired"></i>
+                    </div>
+                    <h4 class="font-bold text-lg mb-2">智能运维 (NetOps)</h4>
+                    <p class="text-sm text-slate-500 leading-relaxed mb-4">实时监控应用链路性能（NPM），快速定位网络抖动源头，减少业务中断时间。</p>
+                    <div class="text-[10px] font-bold text-emerald-600 uppercase">关键技术：端到端时延监测、路径回溯</div>
+                </div>
+                <div class="scenario-card bg-white p-6 rounded-2xl border border-slate-200 hover:shadow-xl transition-all duration-300">
+                    <div class="icon-box w-12 h-12 bg-indigo-50 text-indigo-600 rounded-xl flex items-center justify-center text-xl mb-4 transition-transform">
+                        <i class="fas fa-chart-line"></i>
+                    </div>
+                    <h4 class="font-bold text-lg mb-2">业务分析 (BizOps)</h4>
+                    <p class="text-sm text-slate-500 leading-relaxed mb-4">从流量中提取用户交易行为、金融行情数据，直接支撑业务部门的实时看板。</p>
+                    <div class="text-[10px] font-bold text-indigo-600 uppercase">关键技术：应用级解码、数据脱敏</div>
+                </div>
+            </div>
+
+            <!-- Vendor Landscape -->
+            <div class="glass-card rounded-2xl overflow-hidden border border-slate-200">
+                <div class="bg-slate-900 px-8 py-6">
+                    <h3 class="text-white font-bold text-xl">主流厂商现状 (Vendor Quadrant)</h3>
+                </div>
+                <div class="p-8 grid grid-cols-1 lg:grid-cols-2 gap-12">
+                    <div>
+                        <h4 class="text-sky-600 font-bold mb-4 flex items-center">
+                            <i class="fas fa-globe-americas mr-2"></i> 全球领导者
+                        </h4>
+                        <div class="space-y-4">
+                            <div class="p-4 bg-slate-50 rounded-xl border border-slate-100">
+                                <div class="flex justify-between mb-1">
+                                    <span class="font-bold">Gigamon</span>
+                                    <span class="text-xs text-slate-400">深度可观测性首选</span>
+                                </div>
+                                <p class="text-xs text-slate-500">凭借 Deep Observability 架构领先，擅长混合云环境下的全流量编排。</p>
+                            </div>
+                            <div class="p-4 bg-slate-50 rounded-xl border border-slate-100">
+                                <div class="flex justify-between mb-1">
+                                    <span class="font-bold">Keysight (Ixia)</span>
+                                    <span class="text-xs text-slate-400">硬件性能之王</span>
+                                </div>
+                                <p class="text-xs text-slate-500">超高性能分流器领军者，具备从测试到可视化的完整闭环能力。</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div>
+                        <h4 class="text-emerald-600 font-bold mb-4 flex items-center">
+                            <i class="fas fa-star mr-2"></i> 中国本土强势力量
+                        </h4>
+                        <div class="space-y-4">
+                            <div class="p-4 bg-slate-50 rounded-xl border border-slate-100">
+                                <div class="flex justify-between mb-1">
+                                    <span class="font-bold">恒为科技 (Hengwei)</span>
+                                    <span class="text-xs text-slate-400">智算中心首选</span>
+                                </div>
+                                <p class="text-xs text-slate-500">在运营商、算力调度场景具备极高占有率，发力AI原生可视化。</p>
+                            </div>
+                            <div class="p-4 bg-slate-50 rounded-xl border border-slate-100">
+                                <div class="flex justify-between mb-1">
+                                    <span class="font-bold">中新赛克 (Sinovatio)</span>
+                                    <span class="text-xs text-slate-400">内容分析领先</span>
+                                </div>
+                                <p class="text-xs text-slate-500">深耕运营商市场，在大数据分析与海量数据采集领域具备核心壁垒。</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB: FUTURE -->
+        <section id="tab-future" class="tab-content">
+            <div class="mb-12">
+                <h2 class="text-3xl font-extrabold text-slate-900 tracking-tight mb-4">未来发展：从“看见”到“认知”</h2>
+                <p class="text-lg text-slate-600 max-w-3xl">
+                    网络可视化的终极形态将是一个高度自治、具备自我进化能力的“数字生命系统”。
+                </p>
+            </div>
+
+            <div class="relative space-y-12 before:absolute before:inset-0 before:ml-5 before:-translate-x-px md:before:mx-auto md:before:translate-x-0 before:h-full before:w-0.5 before:bg-gradient-to-b before:from-transparent before:via-slate-300 before:to-transparent">
+                
+                <!-- Point 1 -->
+                <div class="relative flex items-center justify-between md:justify-normal md:odd:flex-row-reverse group is-active">
+                    <div class="flex items-center justify-center w-10 h-10 rounded-full border border-white bg-sky-500 text-white shadow shrink-0 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2">
+                        <i class="fas fa-robot text-xs"></i>
+                    </div>
+                    <div class="w-[calc(100%-4rem)] md:w-[calc(50%-2.5rem)] bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+                        <div class="flex items-center justify-between space-x-2 mb-1">
+                            <div class="font-bold text-slate-900">AIOps 原生化</div>
+                            <time class="font-mono text-xs text-sky-600">2026-2027</time>
+                        </div>
+                        <p class="text-sm text-slate-500">可视化平台内置大语言模型 (LLM)，运维人员通过自然语言对话即可完成复杂的流量调配与根因诊断。</p>
+                    </div>
+                </div>
+
+                <!-- Point 2 -->
+                <div class="relative flex items-center justify-between md:justify-normal md:odd:flex-row-reverse group">
+                    <div class="flex items-center justify-center w-10 h-10 rounded-full border border-white bg-slate-300 text-white shadow shrink-0 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2">
+                        <i class="fas fa-link text-xs"></i>
+                    </div>
+                    <div class="w-[calc(100%-4rem)] md:w-[calc(50%-2.5rem)] bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+                        <div class="flex items-center justify-between space-x-2 mb-1">
+                            <div class="font-bold text-slate-900">统一可观测性 (Unified)</div>
+                            <time class="font-mono text-xs text-slate-400">2027-2028</time>
+                        </div>
+                        <p class="text-sm text-slate-500">流量、日志、链路追踪 (Metrics, Logs, Traces) 彻底打通，可视化平台成为 IT 系统唯一的真理来源。</p>
+                    </div>
+                </div>
+
+                <!-- Point 3 -->
+                <div class="relative flex items-center justify-between md:justify-normal md:odd:flex-row-reverse group">
+                    <div class="flex items-center justify-center w-10 h-10 rounded-full border border-white bg-slate-300 text-white shadow shrink-0 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2">
+                        <i class="fas fa-atom text-xs"></i>
+                    </div>
+                    <div class="w-[calc(100%-4rem)] md:w-[calc(50%-2.5rem)] bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+                        <div class="flex items-center justify-between space-x-2 mb-1">
+                            <div class="font-bold text-slate-900">零信任深度集成</div>
+                            <time class="font-mono text-xs text-slate-400">2029+</time>
+                        </div>
+                        <p class="text-sm text-slate-500">可视化作为零信任架构的“眼睛”，实时监控每一次会话的微小偏移，实现动态身份验证与访问权限控制。</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <footer class="bg-white border-t border-slate-200 py-12">
+        <div class="max-w-7xl mx-auto px-4 text-center">
+            <p class="text-sm text-slate-400 font-medium tracking-wide uppercase">NetVis Insight 2026 深度洞察报告</p>
+            <p class="mt-2 text-xs text-slate-400">由分析专家组精心呈现 | 仅供参考</p>
+        </div>
+    </footer>
+
+    <script>
+        // Tab Management
+        function switchTab(tabId) {
+            // Update UI
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            document.getElementById('tab-' + tabId).classList.add('active');
+
+            // Update Nav
+            document.querySelectorAll('nav button').forEach(btn => {
+                btn.classList.remove('nav-active');
+                btn.classList.add('text-slate-500');
+            });
+            document.getElementById('nav-' + tabId).classList.add('nav-active');
+            document.getElementById('nav-' + tabId).classList.remove('text-slate-500');
+
+            // Scroll to top
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        // Initialize Charts
+        window.onload = function() {
+            initCapabilityRadar();
+            initIndicatorBar();
+        }
+
+        function initCapabilityRadar() {
+            const ctx = document.getElementById('capabilityRadar').getContext('2d');
+            new Chart(ctx, {
+                type: 'radar',
+                data: {
+                    labels: ['流量采集', '应用层识别', '云原生支持', '智能分析', '脱敏与合规', '响应联动'],
+                    datasets: [{
+                        label: '行业领先标准',
+                        data: [95, 90, 85, 80, 92, 75],
+                        fill: true,
+                        backgroundColor: 'rgba(2, 132, 199, 0.2)',
+                        borderColor: '#0284c7',
+                        pointBackgroundColor: '#0284c7',
+                    }, {
+                        label: '传统分流方案',
+                        data: [70, 40, 20, 30, 60, 20],
+                        fill: true,
+                        backgroundColor: 'rgba(148, 163, 184, 0.2)',
+                        borderColor: '#94a3b8',
+                        pointBackgroundColor: '#94a3b8',
+                    }]
+                },
+                options: {
+                    maintainAspectRatio: false,
+                    scales: {
+                        r: {
+                            angleLines: { display: true },
+                            suggestedMin: 0,
+                            suggestedMax: 100,
+                            ticks: { display: false }
+                        }
+                    },
+                    plugins: {
+                        legend: { position: 'bottom' }
+                    }
+                }
+            });
+        }
+
+        function initIndicatorBar() {
+            const ctx = document.getElementById('indicatorBar').getContext('2d');
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['丢包率(%)', '识别时间(ms)', '多云覆盖率(%)', '运维耗时(h)', '威胁检测率(%)'],
+                    datasets: [{
+                        label: '现代可视化 (AI+硬件)',
+                        data: [0.01, 0.5, 95, 2, 98],
+                        backgroundColor: '#0284c7',
+                        borderRadius: 8,
+                    }, {
+                        label: '传统探针方案',
+                        data: [5, 15, 30, 24, 65],
+                        backgroundColor: '#94a3b8',
+                        borderRadius: 8,
+                    }]
+                },
+                options: {
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'top' },
+                        tooltip: {
+                            callbacks: {
+                                label: (context) => `${context.dataset.label}: ${context.raw}`
+                            }
+                        }
+                    },
+                    scales: {
+                        y: { beginAtZero: true, grid: { borderDash: [2, 2] } }
+                    }
+                }
+            });
+        }
+
+        // Mobile Menu
+        document.getElementById('mobile-menu-btn').addEventListener('click', () => {
+           // Basic toggle for demo
+           const nav = document.querySelector('nav');
+           nav.classList.toggle('hidden');
+           nav.classList.toggle('flex');
+           nav.classList.toggle('flex-col');
+           nav.classList.toggle('absolute');
+           nav.classList.toggle('top-20');
+           nav.classList.toggle('left-0');
+           nav.classList.toggle('w-full');
+           nav.classList.toggle('bg-white');
+           nav.classList.toggle('p-4');
+           nav.classList.toggle('shadow-xl');
+        });
+    </script>
+</body>
+</html>
