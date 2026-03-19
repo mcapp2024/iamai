@@ -1,0 +1,1663 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>系统监控面板</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif;
+            min-height: 100vh;
+            background:
+                linear-gradient(135deg, rgba(13, 21, 32, 0.92) 0%, rgba(26, 35, 50, 0.88) 100%),
+                url('https://upload.wikimedia.org/wikipedia/commons/thumb/e/ec/World_map_blank_without_borders.svg/2000px-World_map_blank_without_borders.svg.png');
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+            background-repeat: no-repeat;
+            color: #e0e6ed;
+            padding: 20px;
+        }
+
+        .dashboard {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            padding: 20px 0 30px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            font-size: 28px;
+            font-weight: 500;
+            color: #fff;
+            letter-spacing: 2px;
+        }
+
+        .header .subtitle {
+            font-size: 14px;
+            color: #6b7a8f;
+            margin-top: 8px;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 320px 1fr;
+            gap: 25px;
+        }
+
+        /* 时钟区域 */
+        .clock-section {
+            background: linear-gradient(145deg, #1e2a3a, #151d28);
+            border-radius: 16px;
+            padding: 30px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+            border: 1px solid rgba(255,255,255,0.05);
+        }
+
+        .clock {
+            width: 260px;
+            height: 260px;
+            border-radius: 50%;
+            background: linear-gradient(145deg, #243447, #1a2535);
+            box-shadow:
+                0 0 40px rgba(0,0,0,0.4),
+                inset 0 0 30px rgba(0,0,0,0.3);
+            position: relative;
+            margin: 0 auto;
+            border: 3px solid #2a3f55;
+        }
+
+        .clock-face {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+        }
+
+        .mark {
+            position: absolute;
+            left: 50%;
+            top: 12px;
+            width: 2px;
+            height: 12px;
+            background: #4a5568;
+            transform-origin: 50% 118px;
+        }
+
+        .mark.hour-mark {
+            width: 3px;
+            height: 16px;
+            background: #718096;
+            transform-origin: 50% 118px;
+        }
+
+        .number {
+            position: absolute;
+            font-family: 'Segoe UI', sans-serif;
+            font-size: 20px;
+            font-weight: 600;
+            color: #a0aec0;
+            text-align: center;
+            width: 36px;
+            height: 36px;
+            line-height: 36px;
+        }
+
+        .number-12 { top: 22px; left: 50%; transform: translateX(-50%); }
+        .number-1 { top: 42px; right: 55px; }
+        .number-2 { top: 78px; right: 30px; }
+        .number-3 { top: 50%; right: 18px; transform: translateY(-50%); }
+        .number-4 { bottom: 78px; right: 30px; }
+        .number-5 { bottom: 42px; right: 55px; }
+        .number-6 { bottom: 22px; left: 50%; transform: translateX(-50%); }
+        .number-7 { bottom: 42px; left: 55px; }
+        .number-8 { bottom: 78px; left: 30px; }
+        .number-9 { top: 50%; left: 18px; transform: translateY(-50%); }
+        .number-10 { top: 78px; left: 30px; }
+        .number-11 { top: 42px; left: 55px; }
+
+        .center-dot {
+            position: absolute;
+            width: 12px;
+            height: 12px;
+            background: #3182ce;
+            border-radius: 50%;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 10;
+            box-shadow: 0 0 10px rgba(49,130,206,0.5);
+        }
+
+        .hand {
+            position: absolute;
+            bottom: 50%;
+            left: 50%;
+            transform-origin: 50% 100%;
+            border-radius: 6px;
+        }
+
+        .hour-hand {
+            width: 6px;
+            height: 60px;
+            background: #e2e8f0;
+            margin-left: -3px;
+            z-index: 3;
+        }
+
+        .minute-hand {
+            width: 4px;
+            height: 85px;
+            background: #3182ce;
+            margin-left: -2px;
+            z-index: 2;
+        }
+
+        .second-hand {
+            width: 2px;
+            height: 100px;
+            background: #e53e3e;
+            margin-left: -1px;
+            z-index: 4;
+        }
+
+        .digital-time {
+            margin-top: 25px;
+            text-align: center;
+            font-size: 32px;
+            font-weight: 300;
+            color: #fff;
+            letter-spacing: 3px;
+        }
+
+        .date-display {
+            text-align: center;
+            font-size: 14px;
+            color: #6b7a8f;
+            margin-top: 8px;
+        }
+
+        /* 农历信息 */
+        .lunar-info {
+            text-align: center;
+            margin-top: 12px;
+            padding: 12px;
+            background: rgba(49, 130, 206, 0.1);
+            border-radius: 8px;
+            border: 1px solid rgba(49, 130, 206, 0.2);
+        }
+
+        .lunar-info .lunar-date {
+            font-size: 16px;
+            color: #f6ad55;
+            font-weight: 500;
+            margin-bottom: 4px;
+        }
+
+        .lunar-info .lunar-detail {
+            font-size: 12px;
+            color: #a0aec0;
+        }
+
+        /* 日历 */
+        .calendar {
+            margin-top: 20px;
+            padding: 15px;
+            background: rgba(26, 37, 53, 0.5);
+            border-radius: 10px;
+            border: 1px solid rgba(255,255,255,0.05);
+        }
+
+        .calendar-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .calendar-header .month-year {
+            font-size: 14px;
+            color: #fff;
+            font-weight: 500;
+        }
+
+        .calendar-header .nav-btn {
+            background: rgba(49, 130, 206, 0.2);
+            border: none;
+            color: #63b3ed;
+            width: 28px;
+            height: 28px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.2s ease;
+        }
+
+        .calendar-header .nav-btn:hover {
+            background: rgba(49, 130, 206, 0.4);
+        }
+
+        .calendar-weekdays {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 2px;
+            margin-bottom: 8px;
+        }
+
+        .calendar-weekdays span {
+            text-align: center;
+            font-size: 11px;
+            color: #6b7a8f;
+            padding: 4px 0;
+        }
+
+        .calendar-weekdays span.weekend {
+            color: #e53e3e;
+        }
+
+        .calendar-days {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 2px;
+        }
+
+        .calendar-day {
+            position: relative;
+            text-align: center;
+            padding: 6px 2px;
+            font-size: 12px;
+            color: #e2e8f0;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .calendar-day:hover {
+            background: rgba(49, 130, 206, 0.2);
+        }
+
+        .calendar-day.other-month {
+            color: #4a5568;
+        }
+
+        .calendar-day.today {
+            background: linear-gradient(135deg, #3182ce, #2b6cb0);
+            color: #fff;
+            font-weight: 600;
+        }
+
+        .calendar-day.weekend {
+            color: #fc8181;
+        }
+
+        .calendar-day .lunar-day {
+            font-size: 9px;
+            color: #a0aec0;
+            margin-top: 1px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .calendar-day.today .lunar-day {
+            color: rgba(255,255,255,0.8);
+        }
+
+        .calendar-day.festival .lunar-day {
+            color: #f6ad55;
+        }
+
+        .calendar-day.today.festival .lunar-day {
+            color: #fbd38d;
+        }
+
+        /* 信息面板 */
+        .info-section {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+        }
+
+        .info-card {
+            background: linear-gradient(145deg, #1e2a3a, #151d28);
+            border-radius: 12px;
+            padding: 20px 25px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+            border: 1px solid rgba(255,255,255,0.05);
+        }
+
+        .info-card.full-width {
+            grid-column: span 2;
+        }
+
+        .info-card h3 {
+            font-size: 13px;
+            font-weight: 600;
+            color: #6b7a8f;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+        }
+
+        .info-grid.cols-3 {
+            grid-template-columns: repeat(3, 1fr);
+        }
+
+        .info-item {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .info-label {
+            font-size: 11px;
+            color: #6b7a8f;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .info-value {
+            font-size: 14px;
+            color: #e2e8f0;
+            font-weight: 500;
+            word-break: break-all;
+        }
+
+        .info-value.highlight {
+            color: #3182ce;
+            font-size: 15px;
+            font-weight: 600;
+        }
+
+        .info-value.success {
+            color: #38a169;
+        }
+
+        .info-value.warning {
+            color: #d69e2e;
+        }
+
+        .info-value.error {
+            color: #e53e3e;
+        }
+
+        /* 进度条 */
+        .progress-container {
+            margin-top: 8px;
+        }
+
+        .progress-bar {
+            height: 6px;
+            background: #1a2535;
+            border-radius: 3px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            border-radius: 3px;
+            transition: width 0.5s ease;
+        }
+
+        .progress-fill.memory {
+            background: linear-gradient(90deg, #3182ce, #63b3ed);
+        }
+
+        .progress-fill.battery {
+            background: linear-gradient(90deg, #38a169, #68d391);
+        }
+
+        .progress-fill.battery.low {
+            background: linear-gradient(90deg, #e53e3e, #fc8181);
+        }
+
+        .progress-fill.storage {
+            background: linear-gradient(90deg, #805ad5, #b794f4);
+        }
+
+        .progress-fill.network {
+            background: linear-gradient(90deg, #38a169, #68d391);
+        }
+
+        .progress-text {
+            font-size: 12px;
+            color: #6b7a8f;
+            margin-top: 4px;
+            text-align: right;
+        }
+
+        /* 状态指示器 */
+        .status-indicator {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        .status-dot.online {
+            background: #38a169;
+            box-shadow: 0 0 8px rgba(56, 161, 105, 0.5);
+        }
+
+        .status-dot.offline {
+            background: #e53e3e;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        /* 设备列表 */
+        .device-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 8px;
+        }
+
+        .device-tag {
+            background: rgba(49, 130, 206, 0.2);
+            border: 1px solid rgba(49, 130, 206, 0.3);
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 12px;
+            color: #63b3ed;
+        }
+
+        /* 按钮 */
+        .btn {
+            background: linear-gradient(135deg, #3182ce, #2b6cb0);
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            color: #fff;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 10px;
+        }
+
+        .btn:hover {
+            background: linear-gradient(135deg, #4299e1, #3182ce);
+            transform: translateY(-1px);
+        }
+
+        .btn:disabled {
+            background: #4a5568;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* 响应式 */
+        @media (max-width: 1200px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+
+            .info-section {
+                grid-template-columns: 1fr;
+            }
+
+            .info-card.full-width {
+                grid-column: span 1;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .info-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .info-grid.cols-3 {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard">
+        <div class="header">
+            <h1>系统监控面板</h1>
+            <div class="subtitle">System Monitor Dashboard</div>
+        </div>
+
+        <div class="main-content">
+            <!-- 时钟区域 -->
+            <div class="clock-section">
+                <div class="clock">
+                    <div class="clock-face">
+                        <div class="mark hour-mark" style="transform: translateX(-50%) rotate(0deg)"></div>
+                        <div class="mark hour-mark" style="transform: translateX(-50%) rotate(30deg)"></div>
+                        <div class="mark hour-mark" style="transform: translateX(-50%) rotate(60deg)"></div>
+                        <div class="mark hour-mark" style="transform: translateX(-50%) rotate(90deg)"></div>
+                        <div class="mark hour-mark" style="transform: translateX(-50%) rotate(120deg)"></div>
+                        <div class="mark hour-mark" style="transform: translateX(-50%) rotate(150deg)"></div>
+                        <div class="mark hour-mark" style="transform: translateX(-50%) rotate(180deg)"></div>
+                        <div class="mark hour-mark" style="transform: translateX(-50%) rotate(210deg)"></div>
+                        <div class="mark hour-mark" style="transform: translateX(-50%) rotate(240deg)"></div>
+                        <div class="mark hour-mark" style="transform: translateX(-50%) rotate(270deg)"></div>
+                        <div class="mark hour-mark" style="transform: translateX(-50%) rotate(300deg)"></div>
+                        <div class="mark hour-mark" style="transform: translateX(-50%) rotate(330deg)"></div>
+                    </div>
+
+                    <div class="number number-12">12</div>
+                    <div class="number number-1">1</div>
+                    <div class="number number-2">2</div>
+                    <div class="number number-3">3</div>
+                    <div class="number number-4">4</div>
+                    <div class="number number-5">5</div>
+                    <div class="number number-6">6</div>
+                    <div class="number number-7">7</div>
+                    <div class="number number-8">8</div>
+                    <div class="number number-9">9</div>
+                    <div class="number number-10">10</div>
+                    <div class="number number-11">11</div>
+
+                    <div class="hand hour-hand" id="hour"></div>
+                    <div class="hand minute-hand" id="minute"></div>
+                    <div class="hand second-hand" id="second"></div>
+                    <div class="center-dot"></div>
+                </div>
+
+                <div class="digital-time" id="digital"></div>
+                <div class="date-display" id="date"></div>
+
+                <!-- 农历信息 -->
+                <div class="lunar-info">
+                    <div class="lunar-date" id="lunarDate">农历加载中...</div>
+                    <div class="lunar-detail" id="lunarDetail"></div>
+                </div>
+
+                <!-- 日历 -->
+                <div class="calendar">
+                    <div class="calendar-header">
+                        <button class="nav-btn" onclick="changeMonth(-1)">◀</button>
+                        <span class="month-year" id="calendarTitle"></span>
+                        <button class="nav-btn" onclick="changeMonth(1)">▶</button>
+                    </div>
+                    <div class="calendar-weekdays">
+                        <span class="weekend">日</span>
+                        <span>一</span>
+                        <span>二</span>
+                        <span>三</span>
+                        <span>四</span>
+                        <span>五</span>
+                        <span class="weekend">六</span>
+                    </div>
+                    <div class="calendar-days" id="calendarDays"></div>
+                </div>
+            </div>
+
+            <!-- 信息区域 -->
+            <div class="info-section">
+                <!-- 网络信息 -->
+                <div class="info-card">
+                    <h3>网络信息 Network</h3>
+                    <div class="info-grid">
+                        <div class="info-item">
+                            <span class="info-label">IPv4 地址</span>
+                            <span class="info-value highlight" id="ip">获取中...</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">IPv6 地址</span>
+                            <span class="info-value highlight" id="ipv6">获取中...</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">网络状态</span>
+                            <span class="info-value">
+                                <span class="status-indicator">
+                                    <span class="status-dot online" id="networkDot"></span>
+                                    <span id="networkStatus">在线</span>
+                                </span>
+                            </span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">位置 (IP)</span>
+                            <span class="info-value" id="location">获取中...</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">ISP</span>
+                            <span class="info-value" id="isp">获取中...</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 网络详情 -->
+                <div class="info-card">
+                    <h3>网络详情 Network Details</h3>
+                    <div class="info-grid">
+                        <div class="info-item">
+                            <span class="info-label">连接类型</span>
+                            <span class="info-value" id="connectionType">检测中...</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">下行速度</span>
+                            <span class="info-value" id="downlink">检测中...</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">网络延迟 (RTT)</span>
+                            <span class="info-value" id="rtt">检测中...</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">有效类型</span>
+                            <span class="info-value" id="effectiveType">检测中...</span>
+                        </div>
+                        <div class="info-item" style="grid-column: span 2;">
+                            <span class="info-label">网络速度</span>
+                            <div class="progress-container">
+                                <div class="progress-bar">
+                                    <div class="progress-fill network" id="networkBar" style="width: 0%"></div>
+                                </div>
+                                <div class="progress-text" id="networkSpeedText">--</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 系统信息 -->
+                <div class="info-card">
+                    <h3>系统信息 System</h3>
+                    <div class="info-grid">
+                        <div class="info-item">
+                            <span class="info-label">操作系统</span>
+                            <span class="info-value" id="os">检测中...</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">浏览器</span>
+                            <span class="info-value" id="browser">检测中...</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">CPU 核心</span>
+                            <span class="info-value highlight" id="cpuCores">检测中...</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">设备内存</span>
+                            <span class="info-value" id="deviceMemory">检测中...</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">屏幕分辨率</span>
+                            <span class="info-value" id="screen">检测中...</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">像素比</span>
+                            <span class="info-value" id="pixelRatio">检测中...</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">语言</span>
+                            <span class="info-value" id="language">检测中...</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">时区</span>
+                            <span class="info-value" id="timezone">检测中...</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- GPU 信息 -->
+                <div class="info-card">
+                    <h3>GPU 信息 Graphics</h3>
+                    <div class="info-grid">
+                        <div class="info-item" style="grid-column: span 2;">
+                            <span class="info-label">GPU 厂商</span>
+                            <span class="info-value" id="gpuVendor">检测中...</span>
+                        </div>
+                        <div class="info-item" style="grid-column: span 2;">
+                            <span class="info-label">GPU 渲染器</span>
+                            <span class="info-value" id="gpuRenderer">检测中...</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">WebGL 版本</span>
+                            <span class="info-value" id="webglVersion">检测中...</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">最大纹理尺寸</span>
+                            <span class="info-value" id="maxTextureSize">检测中...</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 精确地理位置 -->
+                <div class="info-card">
+                    <h3>精确地理位置 Geolocation</h3>
+                    <div class="info-grid">
+                        <div class="info-item">
+                            <span class="info-label">纬度</span>
+                            <span class="info-value highlight" id="latitude">未获取</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">经度</span>
+                            <span class="info-value highlight" id="longitude">未获取</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">精度</span>
+                            <span class="info-value" id="accuracy">未获取</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">海拔</span>
+                            <span class="info-value" id="altitude">未获取</span>
+                        </div>
+                        <div class="info-item" style="grid-column: span 2;">
+                            <span class="info-label">详细地址</span>
+                            <span class="info-value" id="address" style="color: #63b3ed;">点击按钮获取位置后显示</span>
+                        </div>
+                    </div>
+                    <button class="btn" id="getLocationBtn" onclick="getPreciseLocation()">获取精确位置</button>
+                    <!-- 地图预览 -->
+                    <div id="mapContainer" style="margin-top: 15px; display: none;">
+                        <span class="info-label">地图预览</span>
+                        <div id="mapPreview" style="width: 100%; height: 200px; margin-top: 8px; border-radius: 8px; overflow: hidden; border: 1px solid rgba(255,255,255,0.1);"></div>
+                    </div>
+                </div>
+
+                <!-- 媒体设备 -->
+                <div class="info-card">
+                    <h3>媒体设备 Media Devices</h3>
+                    <div class="info-grid">
+                        <div class="info-item">
+                            <span class="info-label">摄像头</span>
+                            <span class="info-value" id="cameraCount">检测中...</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">麦克风</span>
+                            <span class="info-value" id="micCount">检测中...</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">音频输出</span>
+                            <span class="info-value" id="speakerCount">检测中...</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">触摸支持</span>
+                            <span class="info-value" id="touchSupport">检测中...</span>
+                        </div>
+                        <div class="info-item" style="grid-column: span 2;">
+                            <span class="info-label">设备列表</span>
+                            <div class="device-list" id="deviceList">检测中...</div>
+                        </div>
+                    </div>
+                    <button class="btn" onclick="refreshMediaDevices()">刷新设备列表</button>
+                </div>
+
+                <!-- 内存与电池 -->
+                <div class="info-card">
+                    <h3>资源状态 Resources</h3>
+                    <div class="info-grid">
+                        <div class="info-item">
+                            <span class="info-label">JS 堆内存</span>
+                            <span class="info-value" id="memoryValue">检测中...</span>
+                            <div class="progress-container">
+                                <div class="progress-bar">
+                                    <div class="progress-fill memory" id="memoryBar" style="width: 0%"></div>
+                                </div>
+                                <div class="progress-text" id="memoryPercent">--</div>
+                            </div>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">电池状态</span>
+                            <span class="info-value" id="batteryValue">检测中...</span>
+                            <div class="progress-container">
+                                <div class="progress-bar">
+                                    <div class="progress-fill battery" id="batteryBar" style="width: 0%"></div>
+                                </div>
+                                <div class="progress-text" id="batteryPercent">--</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 存储空间 -->
+                <div class="info-card">
+                    <h3>存储空间 Storage</h3>
+                    <div class="info-grid">
+                        <div class="info-item" style="grid-column: span 2;">
+                            <span class="info-label">存储配额</span>
+                            <span class="info-value" id="storageQuota">检测中...</span>
+                            <div class="progress-container">
+                                <div class="progress-bar">
+                                    <div class="progress-fill storage" id="storageBar" style="width: 0%"></div>
+                                </div>
+                                <div class="progress-text" id="storagePercent">--</div>
+                            </div>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">LocalStorage</span>
+                            <span class="info-value" id="localStorage">检测中...</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">IndexedDB</span>
+                            <span class="info-value" id="indexedDB">检测中...</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Cookies</span>
+                            <span class="info-value" id="cookiesEnabled">检测中...</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Service Worker</span>
+                            <span class="info-value" id="serviceWorker">检测中...</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ==================== 时钟更新 ====================
+        function updateClock() {
+            const now = new Date();
+            const hours = now.getHours();
+            const minutes = now.getMinutes();
+            const seconds = now.getSeconds();
+            const milliseconds = now.getMilliseconds();
+
+            const secondDeg = (seconds + milliseconds / 1000) * 6;
+            const minuteDeg = (minutes + seconds / 60) * 6;
+            const hourDeg = (hours % 12 + minutes / 60) * 30;
+
+            document.getElementById('second').style.transform = `translateX(-50%) rotate(${secondDeg}deg)`;
+            document.getElementById('minute').style.transform = `translateX(-50%) rotate(${minuteDeg}deg)`;
+            document.getElementById('hour').style.transform = `translateX(-50%) rotate(${hourDeg}deg)`;
+
+            const timeStr = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+            document.getElementById('digital').textContent = timeStr;
+
+            const days = ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六'];
+            const dateStr = `${now.getFullYear()}年${now.getMonth() + 1}月${now.getDate()}日 ${days[now.getDay()]}`;
+            document.getElementById('date').textContent = dateStr;
+        }
+
+        setInterval(updateClock, 16);
+        updateClock();
+
+        // ==================== IP 获取 ====================
+        async function fetchIPv4() {
+            const apis = [
+                'https://api.ipify.org',
+                'https://ip.sb',
+                'https://ipecho.net/plain',
+                'https://icanhazip.com'
+            ];
+
+            for (const url of apis) {
+                try {
+                    const controller = new AbortController();
+                    const timeoutId = setTimeout(() => controller.abort(), 3000);
+                    const response = await fetch(url, { signal: controller.signal, mode: 'cors' });
+                    clearTimeout(timeoutId);
+                    if (!response.ok) continue;
+                    const text = (await response.text()).trim();
+                    const ipMatch = text.match(/\b(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})\b/);
+                    const ip = ipMatch ? ipMatch[1] : text;
+                    if (ip && /^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(ip)) return ip;
+                } catch (e) { continue; }
+            }
+            return null;
+        }
+
+        async function fetchIPv6() {
+            const apis = ['https://api6.ipify.org', 'https://ipv6.icanhazip.com', 'https://v6.ident.me'];
+            for (const url of apis) {
+                try {
+                    const controller = new AbortController();
+                    const timeoutId = setTimeout(() => controller.abort(), 3000);
+                    const response = await fetch(url, { signal: controller.signal, mode: 'cors' });
+                    clearTimeout(timeoutId);
+                    if (!response.ok) continue;
+                    const ip = (await response.text()).trim();
+                    if (ip && ip.includes(':')) return ip;
+                } catch (e) { continue; }
+            }
+            return null;
+        }
+
+        async function fetchLocationInfo() {
+            const apis = ['http://ip-api.com/json?lang=zh-CN', 'https://ipapi.co/json/', 'https://ipinfo.io/json'];
+            for (const url of apis) {
+                try {
+                    const controller = new AbortController();
+                    const timeoutId = setTimeout(() => controller.abort(), 3000);
+                    const response = await fetch(url, { signal: controller.signal, mode: 'cors' });
+                    clearTimeout(timeoutId);
+                    if (!response.ok) continue;
+                    const data = await response.json();
+                    if (data.status === 'fail') continue;
+                    return {
+                        city: data.city || data.region || '',
+                        country: data.country || data.country_name || '',
+                        isp: data.isp || data.org || ''
+                    };
+                } catch (e) { continue; }
+            }
+            return null;
+        }
+
+        async function fetchNetworkInfo() {
+            const [ipv4, ipv6, locationInfo] = await Promise.all([fetchIPv4(), fetchIPv6(), fetchLocationInfo()]);
+            document.getElementById('ip').textContent = ipv4 || '无 IPv4';
+            document.getElementById('ipv6').textContent = ipv6 || '无 IPv6';
+            if (locationInfo) {
+                document.getElementById('location').textContent = `${locationInfo.city}${locationInfo.city && locationInfo.country ? ', ' : ''}${locationInfo.country}`;
+                document.getElementById('isp').textContent = locationInfo.isp || '未知';
+            } else {
+                document.getElementById('location').textContent = '获取失败';
+                document.getElementById('isp').textContent = '获取失败';
+            }
+        }
+
+        // ==================== 网络详情 ====================
+        function getNetworkDetails() {
+            const connection = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+
+            if (connection) {
+                const typeMap = { 'wifi': 'WiFi', 'cellular': '蜂窝网络', 'ethernet': '以太网', 'unknown': '未知' };
+                document.getElementById('connectionType').textContent = typeMap[connection.type] || connection.type || '未知';
+                document.getElementById('effectiveType').textContent = connection.effectiveType ? `4G (${connection.effectiveType})` : '未知';
+
+                if (connection.downlink) {
+                    document.getElementById('downlink').textContent = `${connection.downlink} Mbps`;
+                    const speedPercent = Math.min((connection.downlink / 100) * 100, 100);
+                    document.getElementById('networkBar').style.width = `${speedPercent}%`;
+                    document.getElementById('networkSpeedText').textContent = `${connection.downlink} Mbps`;
+                } else {
+                    document.getElementById('downlink').textContent = '不支持';
+                }
+
+                if (connection.rtt) {
+                    document.getElementById('rtt').textContent = `${connection.rtt} ms`;
+                } else {
+                    document.getElementById('rtt').textContent = '不支持';
+                }
+
+                connection.addEventListener('change', getNetworkDetails);
+            } else {
+                document.getElementById('connectionType').textContent = '浏览器不支持';
+                document.getElementById('downlink').textContent = '浏览器不支持';
+                document.getElementById('rtt').textContent = '浏览器不支持';
+                document.getElementById('effectiveType').textContent = '浏览器不支持';
+            }
+        }
+
+        function monitorNetwork() {
+            const dot = document.getElementById('networkDot');
+            const status = document.getElementById('networkStatus');
+            function updateStatus() {
+                if (navigator.onLine) {
+                    dot.classList.add('online');
+                    dot.classList.remove('offline');
+                    status.textContent = '在线';
+                } else {
+                    dot.classList.remove('online');
+                    dot.classList.add('offline');
+                    status.textContent = '离线';
+                }
+            }
+            updateStatus();
+            window.addEventListener('online', updateStatus);
+            window.addEventListener('offline', updateStatus);
+        }
+
+        // ==================== 系统信息 ====================
+        function detectOS() {
+            const ua = navigator.userAgent;
+            let os = '未知';
+            if (ua.includes('Windows NT 10')) os = 'Windows 10/11';
+            else if (ua.includes('Windows NT 6.3')) os = 'Windows 8.1';
+            else if (ua.includes('Windows NT 6.2')) os = 'Windows 8';
+            else if (ua.includes('Windows NT 6.1')) os = 'Windows 7';
+            else if (ua.includes('Mac OS X')) {
+                const version = ua.match(/Mac OS X (\d+[._]\d+)/);
+                os = version ? `macOS ${version[1].replace('_', '.')}` : 'macOS';
+            }
+            else if (ua.includes('Linux')) os = 'Linux';
+            else if (ua.includes('Android')) os = 'Android';
+            else if (ua.includes('iPhone') || ua.includes('iPad')) os = 'iOS';
+            document.getElementById('os').textContent = os;
+        }
+
+        function detectBrowser() {
+            const ua = navigator.userAgent;
+            let browser = '未知';
+            if (ua.includes('Edg/')) browser = 'Microsoft Edge';
+            else if (ua.includes('Chrome/')) browser = 'Google Chrome';
+            else if (ua.includes('Firefox/')) browser = 'Mozilla Firefox';
+            else if (ua.includes('Safari/') && !ua.includes('Chrome')) browser = 'Apple Safari';
+            else if (ua.includes('Opera') || ua.includes('OPR/')) browser = 'Opera';
+            document.getElementById('browser').textContent = browser;
+        }
+
+        function getSystemInfo() {
+            document.getElementById('cpuCores').textContent = navigator.hardwareConcurrency ? `${navigator.hardwareConcurrency} 核心` : '不支持';
+            document.getElementById('deviceMemory').textContent = navigator.deviceMemory ? `${navigator.deviceMemory} GB` : '不支持';
+            document.getElementById('screen').textContent = `${screen.width} x ${screen.height}`;
+            document.getElementById('pixelRatio').textContent = `${window.devicePixelRatio}x`;
+            document.getElementById('language').textContent = navigator.language || '未知';
+            document.getElementById('timezone').textContent = Intl.DateTimeFormat().resolvedOptions().timeZone;
+            detectOS();
+            detectBrowser();
+        }
+
+        // ==================== GPU 信息 ====================
+        function getGPUInfo() {
+            try {
+                const canvas = document.createElement('canvas');
+                const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+
+                if (!gl) {
+                    document.getElementById('gpuVendor').textContent = 'WebGL 不支持';
+                    document.getElementById('gpuRenderer').textContent = 'WebGL 不支持';
+                    document.getElementById('webglVersion').textContent = '不支持';
+                    document.getElementById('maxTextureSize').textContent = '不支持';
+                    return;
+                }
+
+                const debugInfo = gl.getExtension('WEBGL_debug_renderer_info');
+                if (debugInfo) {
+                    document.getElementById('gpuVendor').textContent = gl.getParameter(debugInfo.UNMASKED_VENDOR_WEBGL) || '未知';
+                    document.getElementById('gpuRenderer').textContent = gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL) || '未知';
+                } else {
+                    document.getElementById('gpuVendor').textContent = gl.getParameter(gl.VENDOR) || '未知';
+                    document.getElementById('gpuRenderer').textContent = gl.getParameter(gl.RENDERER) || '未知';
+                }
+
+                const version = gl.getParameter(gl.VERSION);
+                document.getElementById('webglVersion').textContent = version || '未知';
+
+                const maxTextureSize = gl.getParameter(gl.MAX_TEXTURE_SIZE);
+                document.getElementById('maxTextureSize').textContent = maxTextureSize ? `${maxTextureSize} x ${maxTextureSize}` : '未知';
+            } catch (e) {
+                document.getElementById('gpuVendor').textContent = '获取失败';
+                document.getElementById('gpuRenderer').textContent = '获取失败';
+                document.getElementById('webglVersion').textContent = '获取失败';
+                document.getElementById('maxTextureSize').textContent = '获取失败';
+            }
+        }
+
+        // ==================== 精确地理位置 ====================
+        // 反向地理编码获取地址
+        async function reverseGeocode(lat, lng) {
+            const apis = [
+                `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1&accept-language=zh`,
+                `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lng}&localityLanguage=zh`
+            ];
+
+            for (const url of apis) {
+                try {
+                    const controller = new AbortController();
+                    const timeoutId = setTimeout(() => controller.abort(), 5000);
+                    const response = await fetch(url, {
+                        signal: controller.signal,
+                        headers: { 'Accept-Language': 'zh-CN,zh;q=0.9' }
+                    });
+                    clearTimeout(timeoutId);
+
+                    if (!response.ok) continue;
+                    const data = await response.json();
+
+                    // Nominatim格式
+                    if (data.display_name) {
+                        return data.display_name;
+                    }
+                    // BigDataCloud格式
+                    if (data.localityInfo && data.localityInfo.administrative) {
+                        const admin = data.localityInfo.administrative;
+                        return admin.map(a => a.name).reverse().join(', ');
+                    }
+                } catch (e) {
+                    continue;
+                }
+            }
+            return null;
+        }
+
+        function showMapPreview(lat, lng) {
+            const mapContainer = document.getElementById('mapContainer');
+            const mapPreview = document.getElementById('mapPreview');
+
+            // 使用OpenStreetMap静态地图
+            mapPreview.innerHTML = `
+                <iframe
+                    width="100%"
+                    height="200"
+                    frameborder="0"
+                    scrolling="no"
+                    marginheight="0"
+                    marginwidth="0"
+                    src="https://www.openstreetmap.org/export/embed.html?bbox=${lng - 0.01}%2C${lat - 0.01}%2C${lng + 0.01}%2C${lat + 0.01}&layer=mapnik&marker=${lat}%2C${lng}"
+                    style="border: none; filter: brightness(0.8) contrast(1.1);">
+                </iframe>
+            `;
+            mapContainer.style.display = 'block';
+        }
+
+        function getPreciseLocation() {
+            const btn = document.getElementById('getLocationBtn');
+            btn.disabled = true;
+            btn.textContent = '获取中...';
+            document.getElementById('address').textContent = '正在解析地址...';
+            document.getElementById('address').style.color = '#d69e2e';
+
+            if (!navigator.geolocation) {
+                document.getElementById('latitude').textContent = '浏览器不支持';
+                document.getElementById('longitude').textContent = '浏览器不支持';
+                document.getElementById('address').textContent = '浏览器不支持';
+                btn.textContent = '浏览器不支持';
+                btn.disabled = true;
+                return;
+            }
+
+            navigator.geolocation.getCurrentPosition(
+                async (position) => {
+                    const lat = position.coords.latitude;
+                    const lng = position.coords.longitude;
+
+                    document.getElementById('latitude').textContent = lat.toFixed(6);
+                    document.getElementById('longitude').textContent = lng.toFixed(6);
+                    document.getElementById('accuracy').textContent = position.coords.accuracy ? `${position.coords.accuracy.toFixed(0)} 米` : '未知';
+                    document.getElementById('altitude').textContent = position.coords.altitude ? `${position.coords.altitude.toFixed(0)} 米` : '未知';
+
+                    // 获取详细地址
+                    const address = await reverseGeocode(lat, lng);
+                    if (address) {
+                        document.getElementById('address').textContent = address;
+                        document.getElementById('address').style.color = '#63b3ed';
+                    } else {
+                        document.getElementById('address').textContent = '地址解析失败';
+                        document.getElementById('address').style.color = '#e53e3e';
+                    }
+
+                    // 显示地图预览
+                    showMapPreview(lat, lng);
+
+                    btn.textContent = '刷新位置';
+                    btn.disabled = false;
+                },
+                (error) => {
+                    let msg = '未知错误';
+                    switch (error.code) {
+                        case error.PERMISSION_DENIED: msg = '用户拒绝授权'; break;
+                        case error.POSITION_UNAVAILABLE: msg = '位置不可用'; break;
+                        case error.TIMEOUT: msg = '获取超时'; break;
+                    }
+                    document.getElementById('latitude').textContent = msg;
+                    document.getElementById('longitude').textContent = msg;
+                    document.getElementById('address').textContent = msg;
+                    document.getElementById('address').style.color = '#e53e3e';
+                    btn.textContent = '重试';
+                    btn.disabled = false;
+                },
+                { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+            );
+        }
+
+        // ==================== 媒体设备 ====================
+        async function getMediaDevices() {
+            document.getElementById('touchSupport').textContent = navigator.maxTouchPoints > 0 ? `${navigator.maxTouchPoints} 点触摸` : '不支持';
+
+            if (!navigator.mediaDevices || !navigator.mediaDevices.enumerateDevices) {
+                document.getElementById('cameraCount').textContent = '不支持';
+                document.getElementById('micCount').textContent = '不支持';
+                document.getElementById('speakerCount').textContent = '不支持';
+                document.getElementById('deviceList').textContent = '浏览器不支持';
+                return;
+            }
+
+            try {
+                const devices = await navigator.mediaDevices.enumerateDevices();
+                const cameras = devices.filter(d => d.kind === 'videoinput');
+                const mics = devices.filter(d => d.kind === 'audioinput');
+                const speakers = devices.filter(d => d.kind === 'audiooutput');
+
+                document.getElementById('cameraCount').textContent = `${cameras.length} 个设备`;
+                document.getElementById('micCount').textContent = `${mics.length} 个设备`;
+                document.getElementById('speakerCount').textContent = `${speakers.length} 个设备`;
+
+                const deviceList = document.getElementById('deviceList');
+                deviceList.innerHTML = '';
+
+                if (devices.length === 0 || devices[0].label === '') {
+                    deviceList.innerHTML = '<span style="color: #d69e2e;">需要授权才能显示设备名称</span>';
+                } else {
+                    devices.forEach(device => {
+                        const tag = document.createElement('span');
+                        tag.className = 'device-tag';
+                        const icon = device.kind === 'videoinput' ? '📷' : device.kind === 'audioinput' ? '🎤' : '🔊';
+                        tag.textContent = `${icon} ${device.label || '未知设备'}`;
+                        deviceList.appendChild(tag);
+                    });
+                }
+            } catch (e) {
+                document.getElementById('deviceList').textContent = '获取失败';
+            }
+        }
+
+        function refreshMediaDevices() {
+            navigator.mediaDevices.getUserMedia({ audio: true, video: true })
+                .then(stream => {
+                    stream.getTracks().forEach(track => track.stop());
+                    getMediaDevices();
+                })
+                .catch(() => getMediaDevices());
+        }
+
+        // ==================== 内存与电池 ====================
+        function updateMemory() {
+            if (performance.memory) {
+                const used = performance.memory.usedJSHeapSize;
+                const total = performance.memory.jsHeapSizeLimit;
+                const percent = ((used / total) * 100).toFixed(1);
+                const usedMB = (used / 1048576).toFixed(0);
+                const totalMB = (total / 1048576).toFixed(0);
+                document.getElementById('memoryValue').textContent = `${usedMB} MB / ${totalMB} MB`;
+                document.getElementById('memoryBar').style.width = `${percent}%`;
+                document.getElementById('memoryPercent').textContent = `${percent}%`;
+            } else {
+                document.getElementById('memoryValue').textContent = '浏览器不支持';
+                document.getElementById('memoryPercent').textContent = 'N/A';
+            }
+        }
+
+        async function getBatteryInfo() {
+            if ('getBattery' in navigator) {
+                try {
+                    const battery = await navigator.getBattery();
+                    function updateBattery() {
+                        const level = (battery.level * 100).toFixed(0);
+                        const charging = battery.charging ? '充电中' : '使用电池';
+                        document.getElementById('batteryValue').textContent = `${level}% - ${charging}`;
+                        document.getElementById('batteryBar').style.width = `${level}%`;
+                        document.getElementById('batteryPercent').textContent = charging;
+                        const bar = document.getElementById('batteryBar');
+                        if (level < 20 && !battery.charging) {
+                            bar.classList.add('low');
+                        } else {
+                            bar.classList.remove('low');
+                        }
+                    }
+                    updateBattery();
+                    battery.addEventListener('levelchange', updateBattery);
+                    battery.addEventListener('chargingchange', updateBattery);
+                } catch (e) {
+                    document.getElementById('batteryValue').textContent = '获取失败';
+                }
+            } else {
+                document.getElementById('batteryValue').textContent = '浏览器不支持';
+                document.getElementById('batteryPercent').textContent = 'N/A';
+            }
+        }
+
+        // ==================== 存储空间 ====================
+        async function getStorageInfo() {
+            // LocalStorage
+            try {
+                localStorage.setItem('test', 'test');
+                localStorage.removeItem('test');
+                document.getElementById('localStorage').textContent = '支持';
+                document.getElementById('localStorage').classList.add('success');
+            } catch (e) {
+                document.getElementById('localStorage').textContent = '不支持';
+                document.getElementById('localStorage').classList.add('error');
+            }
+
+            // IndexedDB
+            document.getElementById('indexedDB').textContent = window.indexedDB ? '支持' : '不支持';
+            document.getElementById('indexedDB').classList.add(window.indexedDB ? 'success' : 'error');
+
+            // Cookies
+            document.getElementById('cookiesEnabled').textContent = navigator.cookieEnabled ? '启用' : '禁用';
+            document.getElementById('cookiesEnabled').classList.add(navigator.cookieEnabled ? 'success' : 'error');
+
+            // Service Worker
+            document.getElementById('serviceWorker').textContent = 'serviceWorker' in navigator ? '支持' : '不支持';
+            document.getElementById('serviceWorker').classList.add('serviceWorker' in navigator ? 'success' : 'error');
+
+            // 存储配额
+            if (navigator.storage && navigator.storage.estimate) {
+                try {
+                    const estimate = await navigator.storage.estimate();
+                    const used = (estimate.usage / 1048576).toFixed(0);
+                    const quota = (estimate.quota / 1048576).toFixed(0);
+                    const percent = ((estimate.usage / estimate.quota) * 100).toFixed(2);
+                    document.getElementById('storageQuota').textContent = `${used} MB / ${quota} MB`;
+                    document.getElementById('storageBar').style.width = `${percent}%`;
+                    document.getElementById('storagePercent').textContent = `已用 ${percent}%`;
+                } catch (e) {
+                    document.getElementById('storageQuota').textContent = '获取失败';
+                }
+            } else {
+                document.getElementById('storageQuota').textContent = '浏览器不支持';
+                document.getElementById('storagePercent').textContent = 'N/A';
+            }
+        }
+
+        // ==================== 初始化 ====================
+        fetchNetworkInfo();
+        getNetworkDetails();
+        monitorNetwork();
+        getSystemInfo();
+        getGPUInfo();
+        getMediaDevices();
+        updateMemory();
+        getBatteryInfo();
+        getStorageInfo();
+
+        setInterval(updateMemory, 2000);
+
+        // ==================== 农历算法 ====================
+        const LunarCalendar = {
+            // 农历数据 1900-2100年
+            lunarInfo: [
+                0x04bd8, 0x04ae0, 0x0a570, 0x054d5, 0x0d260, 0x0d950, 0x16554, 0x056a0, 0x09ad0, 0x055d2,
+                0x04ae0, 0x0a5b6, 0x0a4d0, 0x0d250, 0x1d255, 0x0b540, 0x0d6a0, 0x0ada2, 0x095b0, 0x14977,
+                0x04970, 0x0a4b0, 0x0b4b5, 0x06a50, 0x06d40, 0x1ab54, 0x02b60, 0x09570, 0x052f2, 0x04970,
+                0x06566, 0x0d4a0, 0x0ea50, 0x06e95, 0x05ad0, 0x02b60, 0x186e3, 0x092e0, 0x1c8d7, 0x0c950,
+                0x0d4a0, 0x1d8a6, 0x0b550, 0x056a0, 0x1a5b4, 0x025d0, 0x092d0, 0x0d2b2, 0x0a950, 0x0b557,
+                0x06ca0, 0x0b550, 0x15355, 0x04da0, 0x0a5b0, 0x14573, 0x052b0, 0x0a9a8, 0x0e950, 0x06aa0,
+                0x0aea6, 0x0ab50, 0x04b60, 0x0aae4, 0x0a570, 0x05260, 0x0f263, 0x0d950, 0x05b57, 0x056a0,
+                0x096d0, 0x04dd5, 0x04ad0, 0x0a4d0, 0x0d4d4, 0x0d250, 0x0d558, 0x0b540, 0x0b6a0, 0x195a6,
+                0x095b0, 0x049b0, 0x0a974, 0x0a4b0, 0x0b27a, 0x06a50, 0x06d40, 0x0af46, 0x0ab60, 0x09570,
+                0x04af5, 0x04970, 0x064b0, 0x074a3, 0x0ea50, 0x06b58, 0x055c0, 0x0ab60, 0x096d5, 0x092e0,
+                0x0c960, 0x0d954, 0x0d4a0, 0x0da50, 0x07552, 0x056a0, 0x0abb7, 0x025d0, 0x092d0, 0x0cab5,
+                0x0a950, 0x0b4a0, 0x0baa4, 0x0ad50, 0x055d9, 0x04ba0, 0x0a5b0, 0x15176, 0x052b0, 0x0a930,
+                0x07954, 0x06aa0, 0x0ad50, 0x05b52, 0x04b60, 0x0a6e6, 0x0a4e0, 0x0d260, 0x0ea65, 0x0d530,
+                0x05aa0, 0x076a3, 0x096d0, 0x04afb, 0x04ad0, 0x0a4d0, 0x1d0b6, 0x0d250, 0x0d520, 0x0dd45,
+                0x0b5a0, 0x056d0, 0x055b2, 0x049b0, 0x0a577, 0x0a4b0, 0x0aa50, 0x1b255, 0x06d20, 0x0ada0,
+                0x14b63, 0x09370, 0x049f8, 0x04970, 0x064b0, 0x168a6, 0x0ea50, 0x06b20, 0x1a6c4, 0x0aae0,
+                0x0a2e0, 0x0d2e3, 0x0c960, 0x0d557, 0x0d4a0, 0x0da50, 0x05d55, 0x056a0, 0x0a6d0, 0x055d4,
+                0x052d0, 0x0a9b8, 0x0a950, 0x0b4a0, 0x0b6a6, 0x0ad50, 0x055a0, 0x0aba4, 0x0a5b0, 0x052b0,
+                0x0b273, 0x06930, 0x07337, 0x06aa0, 0x0ad50, 0x14b55, 0x04b60, 0x0a570, 0x054e4, 0x0d160,
+                0x0e968, 0x0d520, 0x0daa0, 0x16aa6, 0x056d0, 0x04ae0, 0x0a9d4, 0x0a2d0, 0x0d150, 0x0f252,
+                0x0d520
+            ],
+            // 天干
+            Gan: ['甲', '乙', '丙', '丁', '戊', '己', '庚', '辛', '壬', '癸'],
+            // 地支
+            Zhi: ['子', '丑', '寅', '卯', '辰', '巳', '午', '未', '申', '酉', '戌', '亥'],
+            // 生肖
+            Animals: ['鼠', '牛', '虎', '兔', '龙', '蛇', '马', '羊', '猴', '鸡', '狗', '猪'],
+            // 农历月份
+            nStr1: ['日', '一', '二', '三', '四', '五', '六', '七', '八', '九', '十'],
+            nStr2: ['初', '十', '廿', '卅'],
+            nStr3: ['正', '二', '三', '四', '五', '六', '七', '八', '九', '十', '冬', '腊'],
+            // 节气
+            solarTerm: ['小寒', '大寒', '立春', '雨水', '惊蛰', '春分', '清明', '谷雨', '立夏', '小满', '芒种', '夏至', '小暑', '大暑', '立秋', '处暑', '白露', '秋分', '寒露', '霜降', '立冬', '小雪', '大雪', '冬至'],
+            sTermInfo: [0, 21208, 42467, 63836, 85337, 107014, 128867, 150921, 173149, 195551, 218072, 240693, 263343, 285989, 308563, 331033, 353350, 375494, 397447, 419210, 440795, 462224, 483532, 504758],
+            // 节日
+            lFtv: ['0101春节', '0115元宵', '0505端午', '0707七夕', '0715中元', '0815中秋', '0909重阳', '1208腊八', '1224小年', '1230除夕'],
+            sFtv: ['0101元旦', '0214情人节', '0308妇女节', '0312植树节', '0401愚人节', '0501劳动节', '0504青年节', '0601儿童节', '0701建党节', '0801建军节', '0910教师节', '1001国庆节', '1031万圣节', '1111光棍节', '1225圣诞节'],
+
+            // 返回农历y年的总天数
+            lYearDays(y) {
+                let i, sum = 348;
+                for (i = 0x8000; i > 0x8; i >>= 1) sum += (this.lunarInfo[y - 1900] & i) ? 1 : 0;
+                return sum + this.leapDays(y);
+            },
+
+            // 返回农历y年闰月的天数
+            leapDays(y) {
+                if (this.leapMonth(y)) return (this.lunarInfo[y - 1900] & 0x10000) ? 30 : 29;
+                return 0;
+            },
+
+            // 返回农历y年闰哪个月 1-12 , 没闰返回 0
+            leapMonth(y) {
+                return this.lunarInfo[y - 1900] & 0xf;
+            },
+
+            // 返回农历y年m月的总天数
+            monthDays(y, m) {
+                return (this.lunarInfo[y - 1900] & (0x10000 >> m)) ? 30 : 29;
+            },
+
+            // 公历转农历
+            solar2lunar(y, m, d) {
+                if (y < 1900 || y > 2100) return null;
+                if (y === 1900 && m === 1 && d < 31) return null;
+
+                let offset = (Date.UTC(y, m - 1, d) - Date.UTC(1900, 0, 31)) / 86400000;
+                let i, temp = 0;
+
+                for (i = 1900; i < 2101 && offset > 0; i++) {
+                    temp = this.lYearDays(i);
+                    offset -= temp;
+                }
+                if (offset < 0) {
+                    offset += temp;
+                    i--;
+                }
+
+                const year = i;
+                const leap = this.leapMonth(i);
+                let isLeap = false;
+
+                for (i = 1; i < 13 && offset > 0; i++) {
+                    if (leap > 0 && i === (leap + 1) && !isLeap) {
+                        --i;
+                        isLeap = true;
+                        temp = this.leapDays(year);
+                    } else {
+                        temp = this.monthDays(year, i);
+                    }
+                    if (isLeap && i === (leap + 1)) isLeap = false;
+                    offset -= temp;
+                }
+
+                if (offset === 0 && leap > 0 && i === leap + 1) {
+                    if (isLeap) {
+                        isLeap = false;
+                    } else {
+                        isLeap = true;
+                        --i;
+                    }
+                }
+                if (offset < 0) {
+                    offset += temp;
+                    --i;
+                }
+
+                const month = i;
+                const day = offset + 1;
+
+                // 获取农历日期字符串
+                let lunarDayStr;
+                if (day === 10) {
+                    lunarDayStr = '初十';
+                } else if (day === 20) {
+                    lunarDayStr = '二十';
+                } else if (day === 30) {
+                    lunarDayStr = '三十';
+                } else {
+                    lunarDayStr = this.nStr2[Math.floor(day / 10)] + this.nStr1[day % 10];
+                }
+
+                return {
+                    lYear: year,
+                    lMonth: month,
+                    lDay: day,
+                    isLeap: isLeap,
+                    yearCn: this.Gan[(year - 4) % 10] + this.Zhi[(year - 4) % 12],
+                    animal: this.Animals[(year - 4) % 12],
+                    monthCn: (isLeap ? '闰' : '') + this.nStr3[month - 1] + '月',
+                    dayCn: lunarDayStr,
+                    term: this.getTerm(y, m, d),
+                    festival: this.getLunarFestival(month, day),
+                    solarFestival: this.getSolarFestival(m, d)
+                };
+            },
+
+            // 获取节气
+            getTerm(y, m, d) {
+                const sTermInfo = this.sTermInfo;
+                const firstNode = this.getSTerm(y, (m - 1) * 2);
+                const secondNode = this.getSTerm(y, (m - 1) * 2 + 1);
+
+                if (d === firstNode) return this.solarTerm[(m - 1) * 2];
+                if (d === secondNode) return this.solarTerm[(m - 1) * 2 + 1];
+                return null;
+            },
+
+            // 获取某年某月第n个节气的日期
+            getSTerm(y, n) {
+                const offDate = new Date(31556925974.7 * (y - 1900) + this.sTermInfo[n] * 60000 + Date.UTC(1900, 0, 6, 2, 5));
+                return offDate.getUTCDate();
+            },
+
+            // 获取农历节日
+            getLunarFestival(m, d) {
+                const md = (m < 10 ? '0' : '') + m + (d < 10 ? '0' : '') + d;
+                for (const f of this.lFtv) {
+                    if (f.substring(0, 4) === md) return f.substring(4);
+                }
+                return null;
+            },
+
+            // 获取公历节日
+            getSolarFestival(m, d) {
+                const md = (m < 10 ? '0' : '') + m + (d < 10 ? '0' : '') + d;
+                for (const f of this.sFtv) {
+                    if (f.substring(0, 4) === md) return f.substring(4);
+                }
+                return null;
+            }
+        };
+
+        // ==================== 日历功能 ====================
+        let currentYear, currentMonth;
+
+        function initCalendar() {
+            const today = new Date();
+            currentYear = today.getFullYear();
+            currentMonth = today.getMonth();
+            renderCalendar();
+            updateLunarInfo();
+        }
+
+        function changeMonth(delta) {
+            currentMonth += delta;
+            if (currentMonth > 11) {
+                currentMonth = 0;
+                currentYear++;
+            } else if (currentMonth < 0) {
+                currentMonth = 11;
+                currentYear--;
+            }
+            renderCalendar();
+        }
+
+        function renderCalendar() {
+            const title = document.getElementById('calendarTitle');
+            const daysContainer = document.getElementById('calendarDays');
+
+            const months = ['一月', '二月', '三月', '四月', '五月', '六月', '七月', '八月', '九月', '十月', '十一月', '十二月'];
+            title.textContent = `${currentYear}年 ${months[currentMonth]}`;
+
+            const firstDay = new Date(currentYear, currentMonth, 1);
+            const lastDay = new Date(currentYear, currentMonth + 1, 0);
+            const startDay = firstDay.getDay();
+            const totalDays = lastDay.getDate();
+
+            const today = new Date();
+            const isCurrentMonth = today.getFullYear() === currentYear && today.getMonth() === currentMonth;
+
+            let html = '';
+
+            // 上月的日期
+            const prevMonth = new Date(currentYear, currentMonth, 0);
+            const prevDays = prevMonth.getDate();
+            for (let i = startDay - 1; i >= 0; i--) {
+                const day = prevDays - i;
+                const lunar = LunarCalendar.solar2lunar(currentYear, currentMonth === 0 ? 12 : currentMonth, day);
+                const lunarText = lunar ? (lunar.dayCn || '') : '';
+                const festivalClass = lunar && (lunar.festival || lunar.solarFestival) ? 'festival' : '';
+                html += `<div class="calendar-day other-month ${festivalClass}">
+                    ${day}
+                    <div class="lunar-day">${lunar.festival || lunar.solarFestival || lunarText}</div>
+                </div>`;
+            }
+
+            // 当月的日期
+            for (let day = 1; day <= totalDays; day++) {
+                const isToday = isCurrentMonth && day === today.getDate();
+                const dayOfWeek = new Date(currentYear, currentMonth, day).getDay();
+                const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
+                const lunar = LunarCalendar.solar2lunar(currentYear, currentMonth + 1, day);
+                const lunarText = lunar ? (lunar.dayCn || '') : '';
+                const term = lunar && lunar.term ? lunar.term : null;
+                const festival = lunar && (lunar.festival || lunar.solarFestival);
+
+                let classes = 'calendar-day';
+                if (isToday) classes += ' today';
+                if (isWeekend) classes += ' weekend';
+                if (festival || term) classes += ' festival';
+
+                const displayText = festival || term || lunarText;
+                html += `<div class="${classes}">
+                    ${day}
+                    <div class="lunar-day">${displayText}</div>
+                </div>`;
+            }
+
+            // 下月的日期
+            const remainingDays = 42 - (startDay + totalDays);
+            for (let day = 1; day <= remainingDays; day++) {
+                const lunar = LunarCalendar.solar2lunar(currentYear, currentMonth === 11 ? 1 : currentMonth + 2, day);
+                const lunarText = lunar ? (lunar.dayCn || '') : '';
+                const festivalClass = lunar && (lunar.festival || lunar.solarFestival) ? 'festival' : '';
+                html += `<div class="calendar-day other-month ${festivalClass}">
+                    ${day}
+                    <div class="lunar-day">${lunar.festival || lunar.solarFestival || lunarText}</div>
+                </div>`;
+            }
+
+            daysContainer.innerHTML = html;
+        }
+
+        function updateLunarInfo() {
+            const today = new Date();
+            const lunar = LunarCalendar.solar2lunar(today.getFullYear(), today.getMonth() + 1, today.getDate());
+
+            if (lunar) {
+                // 农历日期
+                document.getElementById('lunarDate').textContent =
+                    `${lunar.yearCn}年 【${lunar.animal}年】 ${lunar.monthCn}${lunar.dayCn}`;
+
+                // 详细信息
+                const details = [];
+                if (lunar.term) details.push(lunar.term);
+                if (lunar.festival) details.push(lunar.festival);
+                if (lunar.solarFestival) details.push(lunar.solarFestival);
+                if (lunar.isLeap) details.push('闰月');
+
+                document.getElementById('lunarDetail').textContent =
+                    details.length > 0 ? details.join(' · ') : '农历 ' + lunar.monthCn + lunar.dayCn;
+            }
+        }
+
+        // 初始化日历
+        initCalendar();
+    </script>
+</body>
+</html>
